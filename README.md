@@ -4,8 +4,6 @@
 
 [![main](https://github.com/ssorj/skupper-example-ansible/actions/workflows/main.yaml/badge.svg)](https://github.com/ssorj/skupper-example-ansible/actions/workflows/main.yaml)
 
-#### A minimal HTTP application deployed across Kubernetes clusters using Skupper
-
 This example is part of a [suite of examples][examples] showing the
 different ways you can use [Skupper][website] to connect services
 across cloud providers, data centers, and edge sites.
@@ -16,6 +14,7 @@ across cloud providers, data centers, and edge sites.
 #### Contents
 
 * [Prerequisites](#prerequisites)
+* [Step 1: Experimenting](#step-1-experimenting)
 * [Next steps](#next-steps)
 * [About this example](#about-this-example)
 
@@ -29,6 +28,14 @@ across cloud providers, data centers, and edge sites.
 
 [install-kubectl]: https://kubernetes.io/docs/tasks/tools/install-kubectl/
 [kube-providers]: https://skupper.io/start/kubernetes.html
+
+## Step 1: Experimenting
+
+_**Other:**_
+
+~~~ shell
+ansible-playbook -i ansible/inventory.yml ansible/setup.yml ansible/test.yml ansible/teardown.yml
+~~~
 
 ## Next steps
 
