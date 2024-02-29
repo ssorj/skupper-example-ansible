@@ -38,6 +38,7 @@ jobs:
       - uses: medyagh/setup-minikube@latest
       - run: curl https://skupper.io/install.sh | bash -s -- --version ${{matrix.skupper-version}}
       - run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - run: ansible-galaxy collection install skupper.network
       - run: ./plano test
         env:
           PLANO_COLOR: 1
