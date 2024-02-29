@@ -13,14 +13,15 @@ sites:
     env:
       KUBECONFIG: /tmp/skewer/kubeconfig-east
   other:
-    title: Other
-    platform: podman
-    env:
-      SKUPPER_PLATFORM: podman
+    title: Terminal
+    platform: null
 steps:
+  - standard: general/install_the_skupper_command_line_tool
+  - title: Install the Skupper Ansible collection
+    commands:
+      other:
+        - run: ansible-galaxy collection install skupper.network
   - title: Experimenting
     commands:
       other:
-        - run: |
-            ansible-galaxy collection install skupper.network
-            ansible-playbook -i ansible/inventory.yml ansible/setup.yml ansible/test.yml ansible/teardown.yml
+        - run: ansible-playbook -i ansible/inventory.yml ansible/setup.yml ansible/test.yml ansible/teardown.yml

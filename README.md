@@ -14,7 +14,9 @@ across cloud providers, data centers, and edge sites.
 #### Contents
 
 * [Prerequisites](#prerequisites)
-* [Step 1: Experimenting](#step-1-experimenting)
+* [Step 1: Install the Skupper command-line tool](#step-1-install-the-skupper-command-line-tool)
+* [Step 2: Install the Skupper Ansible collection](#step-2-install-the-skupper-ansible-collection)
+* [Step 3: Experimenting](#step-3-experimenting)
 * [Next steps](#next-steps)
 * [About this example](#about-this-example)
 
@@ -29,9 +31,39 @@ across cloud providers, data centers, and edge sites.
 [install-kubectl]: https://kubernetes.io/docs/tasks/tools/install-kubectl/
 [kube-providers]: https://skupper.io/start/kubernetes.html
 
-## Step 1: Experimenting
+## Step 1: Install the Skupper command-line tool
 
-_**Other:**_
+This example uses the Skupper command-line tool to deploy Skupper.
+You need to install the `skupper` command only once for each
+development environment.
+
+On Linux or Mac, you can use the install script (inspect it
+[here][install-script]) to download and extract the command:
+
+~~~ shell
+curl https://skupper.io/install.sh | sh
+~~~
+
+The script installs the command under your home directory.  It
+prompts you to add the command to your path if necessary.
+
+For Windows and other installation options, see [Installing
+Skupper][install-docs].
+
+[install-script]: https://github.com/skupperproject/skupper-website/blob/main/input/install.sh
+[install-docs]: https://skupper.io/install/
+
+## Step 2: Install the Skupper Ansible collection
+
+_**Terminal:**_
+
+~~~ shell
+ansible-galaxy collection install skupper.network
+~~~
+
+## Step 3: Experimenting
+
+_**Terminal:**_
 
 ~~~ shell
 ansible-playbook -i ansible/inventory.yml ansible/setup.yml ansible/test.yml ansible/teardown.yml
