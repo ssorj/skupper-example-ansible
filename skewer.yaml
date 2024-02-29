@@ -22,4 +22,5 @@ steps:
     commands:
       other:
         - run: |
+            ansible-galaxy collection install skupper.network
             ansible-playbook -i ansible/inventory.yml ansible/setup.yml ansible/test.yml ansible/teardown.yml
