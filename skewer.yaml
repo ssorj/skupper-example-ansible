@@ -1,27 +1,128 @@
 title: Skupper Hello World using Ansible
 sites:
   west:
-    title: West
+    title: Terminal
     platform: kubernetes
     namespace: west
     env:
       KUBECONFIG: /tmp/skewer/kubeconfig-west
   east:
-    title: East
     platform: kubernetes
     namespace: east
     env:
       KUBECONFIG: /tmp/skewer/kubeconfig-east
-  other:
-    title: Terminal
-    platform: null
 steps:
   - standard: general/install_the_skupper_command_line_tool
+    # XXX The ansible tasks use the kubectl and skupper commands
   - title: Install the Skupper Ansible collection
     commands:
-      other:
+      west:
         - run: ansible-galaxy collection install skupper.network
-  - title: Experimenting
+  - title: Set up your clusters
+    preamble: |
+      Skupper is designed for use with multiple Kubernetes clusters.
+      The `skupper` and `kubectl` commands use your
+      [kubeconfig][kubeconfig] to select the cluster where they
+      operate.
+
+      [kubeconfig]: https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/
+
+      Your kubeconfig is stored in a file in your home directory.  The
+      `skupper` and `kubectl` commands use the `KUBECONFIG` environment
+      variable to locate it.
+
+      A single kubeconfig supports only one active cluster per user.
+      Since you will be using multiple clusters at once in this
+      exercise, you need to create distinct kubeconfigs.
+
+      For each cluster, set the `KUBECONFIG` environment variable to a
+      different path and log in.
+
+      **Note:** The login procedure varies by provider.  See the
+      documentation for yours:
+
+      * [Minikube](https://skupper.io/start/minikube.html#cluster-access)
+      * [Amazon Elastic Kubernetes Service (EKS)](https://skupper.io/start/eks.html#cluster-access)
+      * [Azure Kubernetes Service (AKS)](https://skupper.io/start/aks.html#cluster-access)
+      * [Google Kubernetes Engine (GKE)](https://skupper.io/start/gke.html#cluster-access)
+      * [IBM Kubernetes Service](https://skupper.io/start/ibmks.html#cluster-access)
+      * [OpenShift](https://skupper.io/start/openshift.html#cluster-access)
     commands:
-      other:
-        - run: ansible-playbook -i ansible/inventory.yml ansible/setup.yml ansible/test.yml ansible/teardown.yml
+      west:
+        - run: export KUBECONFIG=~/.kube/config-west
+        - run: "# Enter your provider-specific login command for cluster 1"
+        - run: export KUBECONFIG=~/.kube/config-east
+        - run: "# Enter your provider-specific login command for cluster 2"
+  - title: Inspect the Ansible inventory
+    preamble: |
+      XXX inventory (sites, links, and services)
+
+      XXX <https://docs.ansible.com/ansible/latest/getting_started/get_started_inventory.html>
+
+      XXX [ansible/inventory.yml](ansible/inventory.yml)
+
+      ~~~ yaml
+      all:
+        vars:
+          platform: kubernetes
+          ansible_connection: local
+        hosts:
+          west:
+            kubeconfig: /tmp/skewer/kubeconfig-west
+            namespace: west
+          east:
+            kubeconfig: /tmp/skewer/kubeconfig-east
+            namespace: east
+            links:
+              - host: west
+            services:
+              backend:
+                ports:
+                  - 8080
+                targets:
+                  - type: deployment
+                    name: backend
+      ~~~
+
+      XXX Two sites, west and east.
+
+      XXX The playbook commands that follow use this inventory definition.
+  - title: Run the setup playbook
+    preamble: |
+      The setup playbook has everything, but let's look at the
+      important pieces of it before we run it.
+
+      XXX setup tasks (with the skupper magic at the end)
+    commands:
+      west:
+        - run: ansible-playbook -i ansible/inventory.yml ansible/setup.yml
+          output: |
+            [...]
+
+            PLAY RECAP ***************************************************************************************************************************************
+            east                       : ok=34   changed=13   unreachable=0    failed=0    skipped=69   rescued=0    ignored=0
+            west                       : ok=34   changed=12   unreachable=0    failed=0    skipped=69   rescued=0    ignored=0
+  - standard: hello_world/access_the_frontend
+    commands:
+      west:
+        - run: export KUBECONFIG=~/.kube/config-west
+          apply: readme
+        - await_resource: deployment/frontend
+        - run: kubectl port-forward deployment/frontend 8080:8080
+          apply: readme
+        - run: kubectl port-forward deployment/frontend 8080:8080 > /dev/null &
+          apply: test
+        - await_port: 8080
+        - run: curl http://localhost:8080/api/health
+          apply: test
+  - title: Run the teardown playbook
+    name: cleaning_up
+    preamble: |
+      XXX The reverse of the setup playbook.
+    commands:
+      west:
+        - run: ansible-playbook -i ansible/inventory.yml ansible/teardown.yml
+          output: |
+            PLAY RECAP ***************************************************************************************************************************************
+            east                       : ok=9    changed=2    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0
+            west                       : ok=9    changed=2    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0

@@ -4,7 +4,4 @@
   tasks:
   - import_role:
       name: skupper_delete
-  - name: Removing namespaces
-    command: "kubectl delete namespace {{ namespace }}"
-    register: out
-    failed_when: out.failed and "not found" not in out.stderr_lines[0]
+  - command: "kubectl delete namespace {{ namespace }}"
