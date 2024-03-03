@@ -1,11 +1,7 @@
 all:
   vars:
-    platform: kubernetes
     ansible_connection: local
   hosts:
-    west:
-      kubeconfig: /tmp/skewer/kubeconfig-west
-      namespace: west
     east:
       kubeconfig: /tmp/skewer/kubeconfig-east
       namespace: east
@@ -18,3 +14,6 @@ all:
           targets:
             - type: deployment
               name: backend
+    west:
+      kubeconfig: /tmp/skewer/kubeconfig-west
+      namespace: west

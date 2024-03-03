@@ -49,27 +49,25 @@ steps:
       * [OpenShift](https://skupper.io/start/openshift.html#cluster-access)
     commands:
       west:
-        - run: export KUBECONFIG=~/.kube/config-west
+        - run: export KUBECONFIG=/tmp/skewer/kubeconfig-west
         - run: "# Enter your provider-specific login command for cluster 1"
-        - run: export KUBECONFIG=~/.kube/config-east
+        - run: export KUBECONFIG=/tmp/skewer/kubeconfig-east
         - run: "# Enter your provider-specific login command for cluster 2"
   - title: Inspect the inventory file
     preamble: |
-      XXX inventory (sites, links, and services)
+      Before we start running commands, let's examine the example
+      inventory file.  It is here that we define Skupper sites, links,
+      and exposed services.
 
-      XXX <https://docs.ansible.com/ansible/latest/getting_started/get_started_inventory.html>
+      <!-- [inventory]: https://docs.ansible.com/ansible/latest/getting_started/get_started_inventory.html -->
 
-      XXX [ansible/inventory.yml](ansible/inventory.yml)
+      [ansible/inventory.yml](ansible/inventory.yml):
 
       ~~~ yaml
       all:
         vars:
-          platform: kubernetes
           ansible_connection: local
         hosts:
-          west:
-            kubeconfig: /tmp/skewer/kubeconfig-west
-            namespace: west
           east:
             kubeconfig: /tmp/skewer/kubeconfig-east
             namespace: east
@@ -82,24 +80,52 @@ steps:
                 targets:
                   - type: deployment
                     name: backend
+          west:
+            kubeconfig: /tmp/skewer/kubeconfig-west
+            namespace: west
       ~~~
 
-      XXX Two sites, west and east.
+      Our example has two sites, East and West.
 
-      XXX The playbook commands that follow use this inventory definition.
+      East has a link to West.
+
+      East exposes its backend service on the network.
+
+      The playbook commands that follow use this inventory data to set
+      up and tear down the Skupper network.
   - title: Run the setup playbook
     preamble: |
       The setup playbook has everything, but let's look at the
       important pieces of it before we run it.
 
-      XXX setup tasks (with the skupper magic at the end)
+      [ansible/setup.yml](ansible/setup.yml):
+
+      ~~~ yaml
+      - hosts: east
+        tasks:
+          - command: "kubectl apply -f {{ playbook_dir }}/kubernetes/east.yaml"
+
+      - hosts: west
+        tasks:
+          - command: "kubectl apply -f {{ playbook_dir }}/kubernetes/west.yaml"
+
+      - hosts: all
+        collections:
+          - skupper.network
+        tasks:
+          - import_role:
+              name: skupper
+      ~~~
+
+      The `skupper` role from the `skupper.network` collection uses
+      the inventory data to deploy Skupper.
     commands:
       west:
         - run: ansible-playbook -i ansible/inventory.yml ansible/setup.yml
           output: |
             [...]
 
-            PLAY RECAP ***************************************************************************************************************************************
+            PLAY RECAP *******************************************************************************************************
             east                       : ok=34   changed=13   unreachable=0    failed=0    skipped=69   rescued=0    ignored=0
             west                       : ok=34   changed=12   unreachable=0    failed=0    skipped=69   rescued=0    ignored=0
   - standard: hello_world/access_the_frontend
@@ -118,11 +144,35 @@ steps:
   - title: Run the teardown playbook
     name: cleaning_up
     preamble: |
-      XXX The reverse of the setup playbook.
+      The reverse of the setup playbook.
+
+      [ansible/teardown.yml](ansible/teardown.yml):
+
+      ~~~ yaml
+      - hosts: all
+        collections:
+          - skupper.network
+        tasks:
+        - import_role:
+            name: skupper_delete
+
+      - hosts: east
+        tasks:
+          - command: "kubectl delete -f {{ playbook_dir }}/kubernetes/east.yaml"
+
+      - hosts: west
+        tasks:
+          - command: "kubectl delete -f {{ playbook_dir }}/kubernetes/west.yaml"
+      ~~~
+
+      The `skupper_delete` role from the `skupper.network` collection
+      removes all the Skupper resources.
     commands:
       west:
         - run: ansible-playbook -i ansible/inventory.yml ansible/teardown.yml
           output: |
-            PLAY RECAP ***************************************************************************************************************************************
+            [...]
+
+            PLAY RECAP *******************************************************************************************************
             east                       : ok=9    changed=2    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0
             west                       : ok=9    changed=2    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0
