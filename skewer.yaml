@@ -53,7 +53,7 @@ steps:
         - run: "# Enter your provider-specific login command for cluster 1"
         - run: export KUBECONFIG=~/.kube/config-east
         - run: "# Enter your provider-specific login command for cluster 2"
-  - title: Inspect the Ansible inventory
+  - title: Inspect the inventory file
     preamble: |
       XXX inventory (sites, links, and services)
 

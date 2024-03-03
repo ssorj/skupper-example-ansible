@@ -1,12 +1,11 @@
-- hosts: all
-  tasks:
-    - command: "kubectl create namespace {{ namespace }}"
-- hosts: west
-  tasks:
-    - command: "kubectl -n {{ namespace }} create deployment frontend --image quay.io/skupper/hello-world-frontend"
 - hosts: east
   tasks:
-    - command: "kubectl -n {{ namespace }} create deployment backend --image quay.io/skupper/hello-world-backend --replicas=3"
+    - command: "kubectl apply -f {{ playbook_dir }}/kubernetes/east.yaml"
+
+- hosts: west
+  tasks:
+    - command: "kubectl apply -f {{ playbook_dir }}/kubernetes/west.yaml"
+
 - hosts: all
   collections:
     - skupper.network
