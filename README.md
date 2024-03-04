@@ -125,9 +125,10 @@ the documentation for yours:
 _**Terminal:**_
 
 ~~~ shell
-export KUBECONFIG=<project-dir>/ansible/kubeconfigs/west
+cd <project-dir>
+export KUBECONFIG=$PWD/ansible/kubeconfigs/west
 # Enter your provider-specific login command for cluster 1
-export KUBECONFIG=<project-dir>/ansible/kubeconfigs/east
+export KUBECONFIG=$PWD/ansible/kubeconfigs/east
 # Enter your provider-specific login command for cluster 2
 ~~~
 
@@ -172,11 +173,10 @@ East so the frontend in West can access it.
 The playbooks that follow use this inventory data to set up and
 tear down the Skupper network.
 
-For more information about inventory files, see
-[X][ansible-inventory] and [Y][skupper-inventory].
+For more information about inventory files, see the [Ansible
+inventory guide][ansible-inventory].
 
-[ansible-inventory]: https://docs.ansible.com/ansible/latest/getting_started/get_started_inventory.html
-[skupper-inventory]: https://mit.edu/
+[ansible-inventory]: https://docs.ansible.com/ansible/latest/inventory_guide/index.html
 
 ## Step 5: Run the setup playbook
 
@@ -236,7 +236,7 @@ Use `kubectl port-forward` to make the frontend available at
 _**Terminal:**_
 
 ~~~ shell
-export KUBECONFIG=<project-dir>/ansible/kubeconfigs/west
+export KUBECONFIG=$PWD/ansible/kubeconfigs/west
 kubectl port-forward deployment/frontend 8080:8080
 ~~~
 
