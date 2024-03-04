@@ -3,7 +3,7 @@ all:
     ansible_connection: local
   hosts:
     east:
-      kubeconfig: /tmp/skewer/kubeconfig-east
+      kubeconfig: "{{ inventory_dir }}/kubeconfigs/east"
       namespace: east
       links:
         - host: west
@@ -15,5 +15,5 @@ all:
             - type: deployment
               name: backend
     west:
-      kubeconfig: /tmp/skewer/kubeconfig-west
+      kubeconfig: "{{ inventory_dir }}/kubeconfigs/west"
       namespace: west

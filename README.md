@@ -59,6 +59,9 @@ Skupper][install-docs].
 
 ## Step 2: Install the Skupper Ansible collection
 
+Use the `ansible-galaxy` command to install the
+`skupper.network` collection.
+
 _**Terminal:**_
 
 ~~~ shell
@@ -67,26 +70,20 @@ ansible-galaxy collection install skupper.network
 
 ## Step 3: Set up your clusters
 
-Skupper is designed for use with multiple Kubernetes clusters.
-The `skupper` and `kubectl` commands use your
-[kubeconfig][kubeconfig] to select the cluster where they
-operate.
+This example uses two clusters.  The clusters are accessed using
+two kubeconfig files:
 
-[kubeconfig]: https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/
+~~~
+<project-dir>/ansible/kubeconfigs/east
+<project-dir>/ansible/kubeconfigs/west
+~~~
 
-Your kubeconfig is stored in a file in your home directory.  The
-`skupper` and `kubectl` commands use the `KUBECONFIG` environment
-variable to locate it.
+For each kubeconfig, set the `KUBECONFIG` environment variable
+to the file path and run the login command for your cluster.
+This updates the kubeconfig with the required credentials.
 
-A single kubeconfig supports only one active cluster per user.
-Since you will be using multiple clusters at once in this
-exercise, you need to create distinct kubeconfigs.
-
-For each cluster, set the `KUBECONFIG` environment variable to a
-different path and log in.
-
-**Note:** The login procedure varies by provider.  See the
-documentation for yours:
+**Note:** The cluster login procedure varies by provider.  See
+the documentation for yours:
 
 * [Minikube](https://skupper.io/start/minikube.html#cluster-access)
 * [Amazon Elastic Kubernetes Service (EKS)](https://skupper.io/start/eks.html#cluster-access)
@@ -98,19 +95,17 @@ documentation for yours:
 _**Terminal:**_
 
 ~~~ shell
-export KUBECONFIG=/tmp/skewer/kubeconfig-west
+export KUBECONFIG=<project-dir>/ansible/kubeconfigs/east
 # Enter your provider-specific login command for cluster 1
-export KUBECONFIG=/tmp/skewer/kubeconfig-east
+export KUBECONFIG=<project-dir>/ansible/kubeconfigs/west
 # Enter your provider-specific login command for cluster 2
 ~~~
 
 ## Step 4: Inspect the inventory file
 
-Before we start running commands, let's examine the example
-inventory file.  It is here that we define Skupper sites, links,
-and exposed services.
-
-<!-- [inventory]: https://docs.ansible.com/ansible/latest/getting_started/get_started_inventory.html -->
+Before we start running commands, let's examine the inventory
+file.  It is here that we can define Skupper sites, links, and
+exposed services.
 
 [ansible/inventory.yml](ansible/inventory.yml):
 
@@ -120,7 +115,7 @@ all:
     ansible_connection: local
   hosts:
     east:
-      kubeconfig: /tmp/skewer/kubeconfig-east
+      kubeconfig: "{{ inventory_dir }}/kubeconfigs/east"
       namespace: east
       links:
         - host: west
@@ -132,23 +127,30 @@ all:
             - type: deployment
               name: backend
     west:
-      kubeconfig: /tmp/skewer/kubeconfig-west
+      kubeconfig: "{{ inventory_dir }}/kubeconfigs/west"
       namespace: west
 ~~~
 
-Our example has two sites, East and West.
+Our example has two sites, East and West, enumerated under
+`hosts`.
 
-East has a link to West.
+The `links` attribute on host `east` defines a link from East to West.
 
-East exposes its backend service on the network.
+The `services` attribute on host `east` exposes the backend on
+East so the frontend in West can access it.
 
-The playbook commands that follow use this inventory data to set
-up and tear down the Skupper network.
+The playbooks that follow use this inventory data to set up and
+tear down the Skupper network.
+
+For more information about inventory files, see
+[X][ansible-inventory] and [Y][skupper-inventory].
+
+[ansible-inventory]: https://docs.ansible.com/ansible/latest/getting_started/get_started_inventory.html
+[skupper-inventory]: https://mit.edu/
 
 ## Step 5: Run the setup playbook
 
-The setup playbook has everything, but let's look at the
-important pieces of it before we run it.
+Now let's look at the setup playbook.
 
 [ansible/setup.yml](ansible/setup.yml):
 
@@ -169,8 +171,12 @@ important pieces of it before we run it.
         name: skupper
 ~~~
 
-The `skupper` role from the `skupper.network` collection uses
-the inventory data to deploy Skupper.
+The two `kubectl` tasks deploy our example application.
+
+The last task is to use the `skupper` role from the
+`skupper.network` collection to deploy the Skupper network.
+
+Use the `ansible-playbook` command to run the playbook:
 
 _**Terminal:**_
 
@@ -184,9 +190,9 @@ _Sample output:_
 $ ansible-playbook -i ansible/inventory.yml ansible/setup.yml
 [...]
 
-PLAY RECAP *******************************************************************************************************
-east                       : ok=34   changed=13   unreachable=0    failed=0    skipped=69   rescued=0    ignored=0
-west                       : ok=34   changed=12   unreachable=0    failed=0    skipped=69   rescued=0    ignored=0
+PLAY RECAP *********************************************************************************************
+east             : ok=34   changed=13   unreachable=0    failed=0    skipped=69   rescued=0    ignored=0
+west             : ok=34   changed=12   unreachable=0    failed=0    skipped=69   rescued=0    ignored=0
 ~~~
 
 ## Step 6: Access the frontend
@@ -200,7 +206,7 @@ Use `kubectl port-forward` to make the frontend available at
 _**Terminal:**_
 
 ~~~ shell
-export KUBECONFIG=~/.kube/config-west
+export KUBECONFIG=$PWD/ansible/kubeconfigs/west
 kubectl port-forward deployment/frontend 8080:8080
 ~~~
 
@@ -209,7 +215,7 @@ You can now access the web interface by navigating to
 
 ## Step 7: Run the teardown playbook
 
-The reverse of the setup playbook.
+To clean everything up, run the teardown playbook.
 
 [ansible/teardown.yml](ansible/teardown.yml):
 
@@ -245,9 +251,9 @@ _Sample output:_
 $ ansible-playbook -i ansible/inventory.yml ansible/teardown.yml
 [...]
 
-PLAY RECAP *******************************************************************************************************
-east                       : ok=9    changed=2    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0
-west                       : ok=9    changed=2    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0
+PLAY RECAP *********************************************************************************************
+east             : ok=9    changed=2    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0
+west             : ok=9    changed=2    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0
 ~~~
 
 ## Next steps
