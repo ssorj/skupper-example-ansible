@@ -4,6 +4,8 @@
 
 [![main](https://github.com/ssorj/skupper-example-ansible/actions/workflows/main.yaml/badge.svg)](https://github.com/ssorj/skupper-example-ansible/actions/workflows/main.yaml)
 
+#### A minimal HTTP application deployed across Kubernetes clusters using Skupper
+
 This example is part of a [suite of examples][examples] showing the
 different ways you can use [Skupper][website] to connect services
 across cloud providers, data centers, and edge sites.
@@ -13,9 +15,10 @@ across cloud providers, data centers, and edge sites.
 
 #### Contents
 
+* [Overview](#overview)
 * [Prerequisites](#prerequisites)
-* [Step 1: Install the Skupper command-line tool](#step-1-install-the-skupper-command-line-tool)
-* [Step 2: Install the Skupper Ansible collection](#step-2-install-the-skupper-ansible-collection)
+* [Step 1: Install the Skupper Ansible collection](#step-1-install-the-skupper-ansible-collection)
+* [Step 2: Install the Skupper command-line tool](#step-2-install-the-skupper-command-line-tool)
 * [Step 3: Set up your clusters](#step-3-set-up-your-clusters)
 * [Step 4: Inspect the inventory file](#step-4-inspect-the-inventory-file)
 * [Step 5: Run the setup playbook](#step-5-run-the-setup-playbook)
@@ -23,6 +26,33 @@ across cloud providers, data centers, and edge sites.
 * [Step 7: Run the teardown playbook](#step-7-run-the-teardown-playbook)
 * [Next steps](#next-steps)
 * [About this example](#about-this-example)
+
+## Overview
+
+This example is a variant of [Skupper Hello World][hello-world] that
+is deployed using the [Skupper Ansible collection][skupper-ansible].
+
+It contains two services:
+
+* A backend service that exposes an `/api/hello` endpoint.  It
+  returns greetings of the form `Hi, <your-name>.  I am <my-name>
+  (<pod-name>)`.
+
+* A frontend service that sends greetings to the backend and
+  fetches new greetings in response.
+
+In this scenario, each service runs in a different Kubernetes
+cluster.  The frontend runs in a namespace on cluster 1 called West,
+and the backend runs in a namespace on cluster 2 called East.
+
+<img src="images/entities.svg" width="640"/>
+
+Skupper enables you to place the backend in one cluster and the
+frontend in another and maintain connectivity between the two
+services without exposing the backend to the public internet.
+
+[hello-world]: https://github.com/skupperproject/skupper-example-hello-world
+[skupper-ansible]: https://galaxy.ansible.com/ui/repo/published/skupper/network/
 
 ## Prerequisites
 
@@ -34,12 +64,23 @@ across cloud providers, data centers, and edge sites.
 
 [install-kubectl]: https://kubernetes.io/docs/tasks/tools/install-kubectl/
 [kube-providers]: https://skupper.io/start/kubernetes.html
+* Ansible, version 2.14 or later ([installation guide](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html))
 
-## Step 1: Install the Skupper command-line tool
+## Step 1: Install the Skupper Ansible collection
 
-This example uses the Skupper command-line tool to deploy Skupper.
-You need to install the `skupper` command only once for each
-development environment.
+Use the `ansible-galaxy` command to install the
+`skupper.network` collection.
+
+_**Terminal:**_
+
+~~~ shell
+ansible-galaxy collection install skupper.network
+~~~
+
+## Step 2: Install the Skupper command-line tool
+
+The Skupper Ansible collection uses the Skupper command-line
+tool to deploy Skupper.
 
 On Linux or Mac, you can use the install script (inspect it
 [here][install-script]) to download and extract the command:
@@ -56,17 +97,6 @@ Skupper][install-docs].
 
 [install-script]: https://github.com/skupperproject/skupper-website/blob/main/input/install.sh
 [install-docs]: https://skupper.io/install/
-
-## Step 2: Install the Skupper Ansible collection
-
-Use the `ansible-galaxy` command to install the
-`skupper.network` collection.
-
-_**Terminal:**_
-
-~~~ shell
-ansible-galaxy collection install skupper.network
-~~~
 
 ## Step 3: Set up your clusters
 
@@ -95,16 +125,16 @@ the documentation for yours:
 _**Terminal:**_
 
 ~~~ shell
-export KUBECONFIG=<project-dir>/ansible/kubeconfigs/east
-# Enter your provider-specific login command for cluster 1
 export KUBECONFIG=<project-dir>/ansible/kubeconfigs/west
+# Enter your provider-specific login command for cluster 1
+export KUBECONFIG=<project-dir>/ansible/kubeconfigs/east
 # Enter your provider-specific login command for cluster 2
 ~~~
 
 ## Step 4: Inspect the inventory file
 
 Before we start running commands, let's examine the inventory
-file.  It is here that we can define Skupper sites, links, and
+file.  It's here that we can define Skupper sites, links, and
 exposed services.
 
 [ansible/inventory.yml](ansible/inventory.yml):
@@ -114,6 +144,9 @@ all:
   vars:
     ansible_connection: local
   hosts:
+    west:
+      kubeconfig: "{{ inventory_dir }}/kubeconfigs/west"
+      namespace: west
     east:
       kubeconfig: "{{ inventory_dir }}/kubeconfigs/east"
       namespace: east
@@ -126,12 +159,9 @@ all:
           targets:
             - type: deployment
               name: backend
-    west:
-      kubeconfig: "{{ inventory_dir }}/kubeconfigs/west"
-      namespace: west
 ~~~
 
-Our example has two sites, East and West, enumerated under
+Our example has two sites, West and East, enumerated under
 `hosts`.
 
 The `links` attribute on host `east` defines a link from East to West.
@@ -155,13 +185,13 @@ Now let's look at the setup playbook.
 [ansible/setup.yml](ansible/setup.yml):
 
 ~~~ yaml
-- hosts: east
-  tasks:
-    - command: "kubectl apply -f {{ playbook_dir }}/kubernetes/east.yaml"
-
 - hosts: west
   tasks:
     - command: "kubectl apply -f {{ playbook_dir }}/kubernetes/west.yaml"
+
+- hosts: east
+  tasks:
+    - command: "kubectl apply -f {{ playbook_dir }}/kubernetes/east.yaml"
 
 - hosts: all
   collections:
@@ -191,8 +221,8 @@ $ ansible-playbook -i ansible/inventory.yml ansible/setup.yml
 [...]
 
 PLAY RECAP *********************************************************************************************
-east             : ok=34   changed=13   unreachable=0    failed=0    skipped=69   rescued=0    ignored=0
 west             : ok=34   changed=12   unreachable=0    failed=0    skipped=69   rescued=0    ignored=0
+east             : ok=34   changed=13   unreachable=0    failed=0    skipped=69   rescued=0    ignored=0
 ~~~
 
 ## Step 6: Access the frontend
@@ -206,7 +236,7 @@ Use `kubectl port-forward` to make the frontend available at
 _**Terminal:**_
 
 ~~~ shell
-export KUBECONFIG=$PWD/ansible/kubeconfigs/west
+export KUBECONFIG=<project-dir>/ansible/kubeconfigs/west
 kubectl port-forward deployment/frontend 8080:8080
 ~~~
 
@@ -227,13 +257,13 @@ To clean everything up, run the teardown playbook.
   - import_role:
       name: skupper_delete
 
-- hosts: east
-  tasks:
-    - command: "kubectl delete -f {{ playbook_dir }}/kubernetes/east.yaml"
-
 - hosts: west
   tasks:
     - command: "kubectl delete -f {{ playbook_dir }}/kubernetes/west.yaml"
+
+- hosts: east
+  tasks:
+    - command: "kubectl delete -f {{ playbook_dir }}/kubernetes/east.yaml"
 ~~~
 
 The `skupper_delete` role from the `skupper.network` collection
@@ -252,8 +282,8 @@ $ ansible-playbook -i ansible/inventory.yml ansible/teardown.yml
 [...]
 
 PLAY RECAP *********************************************************************************************
-east             : ok=9    changed=2    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0
 west             : ok=9    changed=2    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0
+east             : ok=9    changed=2    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0
 ~~~
 
 ## Next steps

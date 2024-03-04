@@ -5,10 +5,10 @@
   - import_role:
       name: skupper_delete
 
-- hosts: east
-  tasks:
-    - command: "kubectl delete -f {{ playbook_dir }}/kubernetes/east.yaml"
-
 - hosts: west
   tasks:
     - command: "kubectl delete -f {{ playbook_dir }}/kubernetes/west.yaml"
+
+- hosts: east
+  tasks:
+    - command: "kubectl delete -f {{ playbook_dir }}/kubernetes/east.yaml"

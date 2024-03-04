@@ -2,6 +2,9 @@ all:
   vars:
     ansible_connection: local
   hosts:
+    west:
+      kubeconfig: "{{ inventory_dir }}/kubeconfigs/west"
+      namespace: west
     east:
       kubeconfig: "{{ inventory_dir }}/kubeconfigs/east"
       namespace: east
@@ -14,6 +17,3 @@ all:
           targets:
             - type: deployment
               name: backend
-    west:
-      kubeconfig: "{{ inventory_dir }}/kubeconfigs/west"
-      namespace: west
