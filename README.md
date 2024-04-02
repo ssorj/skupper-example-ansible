@@ -52,7 +52,7 @@ frontend in another and maintain connectivity between the two
 services without exposing the backend to the public internet.
 
 [hello-world]: https://github.com/skupperproject/skupper-example-hello-world
-[skupper-ansible]: https://galaxy.ansible.com/ui/repo/published/skupper/network/
+[skupper-ansible]: https://galaxy.ansible.com/ui/repo/published/skupper/skupper/
 
 ## Prerequisites
 
@@ -69,12 +69,12 @@ services without exposing the backend to the public internet.
 ## Step 1: Install the Skupper Ansible collection
 
 Use the `ansible-galaxy` command to install the
-`skupper.network` collection.
+`skupper.skupper` collection.
 
 _**Terminal:**_
 
 ~~~ shell
-ansible-galaxy collection install skupper.network
+ansible-galaxy collection install skupper.skupper
 ~~~
 
 ## Step 2: Install the Skupper command-line tool
@@ -195,16 +195,16 @@ Now let's look at the setup playbook.
 
 - hosts: all
   collections:
-    - skupper.network
+    - skupper.skupper
   tasks:
     - import_role:
-        name: skupper
+        name: skupper_setup
 ~~~
 
 The two `kubectl` tasks deploy our example application.
 
-The last task is to use the `skupper` role from the
-`skupper.network` collection to deploy the Skupper network.
+The last task is to use the `skupper_setup` role from the
+`skupper.skupper` collection to deploy the Skupper network.
 
 Use the `ansible-playbook` command to run the playbook:
 
@@ -252,10 +252,10 @@ To clean everything up, run the teardown playbook.
 ~~~ yaml
 - hosts: all
   collections:
-    - skupper.network
+    - skupper.skupper
   tasks:
   - import_role:
-      name: skupper_delete
+      name: skupper_teardown
 
 - hosts: west
   tasks:
@@ -266,7 +266,7 @@ To clean everything up, run the teardown playbook.
     - command: "kubectl delete -f {{ playbook_dir }}/kubernetes/east.yaml"
 ~~~
 
-The `skupper_delete` role from the `skupper.network` collection
+The `skupper_teardown` role from the `skupper.skupper` collection
 removes all the Skupper resources.
 
 _**Terminal:**_

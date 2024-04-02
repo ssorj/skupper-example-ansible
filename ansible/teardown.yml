@@ -1,9 +1,9 @@
 - hosts: all
   collections:
-    - skupper.network
+    - skupper.skupper
   tasks:
   - import_role:
-      name: skupper_delete
+      name: skupper_teardown
 
 - hosts: west
   tasks:
