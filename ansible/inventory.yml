@@ -3,15 +3,15 @@ all:
     ansible_connection: local
   hosts:
     west:
-      kubeconfig: "{{ inventory_dir }}/kubeconfigs/west"
-      namespace: west
+      skupper_option_kubeconfig: "{{ inventory_dir }}/kubeconfigs/west"
+      skupper_option_namespace: west
     east:
-      kubeconfig: "{{ inventory_dir }}/kubeconfigs/east"
-      namespace: east
-      links:
+      skupper_option_kubeconfig: "{{ inventory_dir }}/kubeconfigs/east"
+      skupper_option_namespace: east
+      skupper_link_list:
         - host: west
-      services:
-        backend:
+      skupper_service_list:
+        - name: backend
           ports:
             - 8080
           targets:
